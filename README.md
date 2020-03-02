@@ -6,3 +6,6 @@ I recommend providing a Makefile in same folder.
 
 This is the syntax.
 ./runTestFiles {executable} {test number start} {test number end} {OPT: file extension}
+
+# ERRORS
+If you run into permission errors, do "chmod u+x runTestFiles"
