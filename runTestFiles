@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+
+#Color Codes
+BLUE='\033[0;36m'       #Colors text light Cyan
+YELLOW='\033[0;33m'
+RED='\033[0;31m'        #Colors text red
+NCOLOR='\033[0m'        #Sets text to default
+
+#Const var names
+testFileName="testNUMBER."
+fileOutputName="tmp"
+
+#Sets the executable file name
+fileEXE=${1?Error: no executable indicated}
+
+#Sets the start and end of the loop of test files (inclusive, inclusive)
+fileNumInputStart=${2?Error: no start test number indicated (inclusive)}
+fileNumInputEnd=${3?Error: no end test number indicated (inclusive)}
+
+#Defualts to .out if no extension is indicated
+fileCmpExt=${4-out}
+
+#Runs the diff command and error checks for problems
+function Difference() 
+{
+    if test -f ./${testFileName/NUMBER/$1}${fileCmpExt}
+    then    #SUCCESS
+    {
+        diff $fileOutputName ${testFileName/NUMBER/$1}${fileCmpExt};
+    }
+    else    #FAIL
+    {
+        echo -e "${RED}Did you give the right extension for the 4th parameter?";
+        echo -e "=> ./runTestFiles {executable} {test number start} {test number end} {OPT: file extension}${NCOLOR}";
+        exit 0;
+    }
+    fi
+}
+
+#Runs the program by feeding input files and spitting out a temp file for checking
+function Feed()
+{
+    #Check to see if testfile is provided
+    if test -f "./${testFileName/NUMBER/$1}in"
+    then
+    {
+        if test -f ./${fileEXE}
+        then    #SUCCESS
+        {
+            echo -e "${BLUE}Testing $i:${NCOLOR}"
+            ./$fileEXE < ${testFileName/NUMBER/$1}in > $fileOutputName;
+            Difference $1;
+        }
+        else    #FAIL
+        {
+            #Check to see if there is a Makefile
+            if test -f "./Makefile"
+            then
+            {
+                #Run the Makefile
+                echo -e "${RED}${fileEXE} does not exist...";
+                echo -e "${YELLOW}Running make to create executable...${NCOLOR}";
+                make;
+
+                #Check to see if Makefile was able to create executable
+                if test -f ./${fileEXE}
+                then
+                {
+                    echo -e "${BLUE}Testing $i:${NCOLOR}"
+                    ./$fileEXE < ${testFileName/NUMBER/$1}in > $fileOutputName;
+                    Difference $1;   
+                }
+                else
+                {
+                    echo -e "${RED} Failed to run make or Makefile has an error when creating executable!";
+                    exit 0;
+                }
+                fi
+            }
+            else
+            {
+                echo -e "${RED}I dont think ${fileEXE} exist or a Makefile is not provided...${NCOLOR}";
+                exit 0;
+            }
+            fi
+        }
+        fi
+    }
+    else
+    {
+        echo -e "${RED}Can not run test $1";
+        echo -e "Error: ${testFileName/NUMBER/$1}in does not exist!${NCOLOR}";
+        exit 0;
+    }
+    fi
+}
+
+#Main loop
+function Main()
+{
+    echo -e "${YELLOW}Running tests ${fileNumInputStart} through ${fileNumInputEnd}..."
+    echo -e "If Testing #: is followed by nothing, it was a success!${NCOLOR}"
+    #Runs all test files
+    for i in `seq ${fileNumInputStart} ${fileNumInputEnd}`
+    do
+        Feed $i
+    done
+}
+
+#Start the main loop
+Main
